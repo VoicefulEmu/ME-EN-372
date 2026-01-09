@@ -49,10 +49,38 @@ def print_stresses(sig_x, sig_y, tau_xy):
     print(f'the normal stresses at these angles are {shear_stress_normal(sig_x, sig_y, tau_xy, phi_shear)} and {shear_stress_normal(sig_x, sig_y, tau_xy, phi_shear + np.pi/2)}')
 
 
-    
+sig_xx = 20
+sig_yy = 10
+sig_zz = 0
+sig_xy = 30
+sig_xz = -10
+sig_yz = 80
+
+def stress_tensor(sig_xx, sig_yy, sig_zz, sig_xy, sig_xz, sig_yz):
+    return np.array([[sig_xx, sig_xy, sig_xz],
+                     [sig_xy, sig_yy, sig_yz],
+                     [sig_xz, sig_yz, sig_zz]])
+
+def principal_stresses(tensor):
+    eigvals, eigvecs = np.linalg.eig(tensor)
+    return eigvals, eigvecs
+
+def print_3d_stresses(sig_xx, sig_yy, sig_zz, sig_xy, sig_xz, sig_yz):
+    print("--------------------------------------------------")
+    tensor = stress_tensor(sig_xx, sig_yy, sig_zz, sig_xy, sig_xz, sig_yz)
+    eigvals, eigvecs = principal_stresses(tensor)
+    print("The principal stresses are:")
+    for i, val in enumerate(eigvals):
+        print(f"Principal Stress {i+1}: {val}")
+    print("The directions of the principal stresses are given by the corresponding eigenvectors:")
+    for i, vec in enumerate(eigvecs.T):
+        print(f"Direction {i+1}: {vec}")
+
+
+
 
 print_stresses(sig_x, sig_y, tau_xy)
-
+print_3d_stresses(sig_xx, sig_yy, sig_zz, sig_xy, sig_xz, sig_yz)
 
     
     
