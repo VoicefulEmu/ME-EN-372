@@ -1,0 +1,98 @@
+import numpy as np
+
+
+#define coefficients and angles in radians
+coeff = np.array([3, 2, 5])
+beta = np.deg2rad(np.array([50, 0, 280]))
+
+#function to calculate global stiffness matrix for each element
+def calc_stiffness_matrix(coeff, beta):
+    """Calculate the global stiffness matrices for structural elements.
+    This function computes the stiffness matrix for each element in a structural
+    system, transforming local element stiffness matrices to the global coordinate
+    system using rotation angles.
+    :param coeff: List of stiffness coefficients (EA/L) for each element
+    :type coeff: list of float
+    :param beta: List of orientation angles (in radians) for each element
+    :type beta: list of float
+    :return: List of global stiffness matrices (4x4 numpy arrays), one per element
+    :rtype: list of numpy.ndarray
+    Example:
+        >>> coeff = [1000, 1500]
+        >>> beta = [0, .7854]
+        >>> k_matrices = calc_global_stiffness_matrix(coeff, beta)
+    """
+    k = []
+    for i in range(len(coeff)):
+        c, s = np.cos(beta[i]), np.sin(beta[i])
+        k_i = coeff[i] * np.array([[c**2, c*s, -c**2, -c*s],
+                                    [c*s, s**2, -c*s, -s**2],
+                                    [-c**2, -c*s, c**2, c*s],
+                                    [-c*s, -s**2, c*s, s**2]])
+        k.append(k_i)
+    return k
+
+k_matrices = calc_stiffness_matrix(coeff, beta)
+
+
+def global_stiffness_matrix(k_matrices):
+    """Assemble the total global stiffness matrix from individual element stiffness matrices.
+    This function combines the stiffness matrices of individual structural elements into a
+    single global stiffness matrix, taking into account the connectivity of the elements.
+    :param k_matrices: List of global stiffness matrices (4x4 numpy arrays) for each element
+    :type k_matrices: list of numpy.ndarray
+    :return: Total global stiffness matrix
+    :rtype: numpy.ndarray
+    Example:
+        >>> k_matrices = [k1, k2]
+        >>> K_total = assemble_global_stiffness_matrix(k_matrices)
+    """
+
+    # map each sub matrix to an expanded 8x8 matrix
+    K_total = np.zeros((6, 6))
+    for i, k in enumerate(k_matrices):
+        # Split k into 4 quadrants
+        k_1 = k[0:2, 0:2]  # top left
+        k_2 = k[0:2, 2:4]  # top right
+        k_3 = k[2:4, 0:2]  # bottom left
+        k_4 = k[2:4, 2:4]  # bottom right
+
+        if i == 0:
+            K_total[0:2, 0:2] += k_1
+            K_total[0:2, 2:4] += k_2
+            K_total[2:4, 0:2] += k_3
+            K_total[2:4, 2:4] += k_4      
+        elif i == 1:
+            K_total[0:2, 0:2] += k_1
+            K_total[0:2, 4:6] += k_2
+            K_total[4:6, 0:2] += k_3
+            K_total[4:6, 4:6] += k_4
+        elif i == 2:
+            K_total[2:4, 2:4] += k_1
+            K_total[2:4, 4:6] += k_2
+            K_total[4:6, 2:4] += k_3
+            K_total[4:6, 4:6] += k_4
+
+    return K_total
+
+
+K_global = global_stiffness_matrix(k_matrices)
+np.set_printoptions(precision=4, suppress=True, linewidth=100)
+print(f"Total global stiffness matrix K:\n{K_global}")
+
+
+#reduced global stiffness matrix
+k_boundary = np.zeros((6, 6))
+k_boundary[2:5, 2:5] = 1
+K_reduced = K_global * k_boundary
+# print(f"\nReduced global stiffness matrix K_reduced:\n{K_reduced}")
+non_zero_mask = K_reduced != 0
+non_zero_indices = np.where(non_zero_mask)
+min_row, max_row = non_zero_indices[0].min(), non_zero_indices[0].max()
+min_col, max_col = non_zero_indices[1].min(), non_zero_indices[1].max()
+K_reduced_trimmed = K_reduced[min_row:max_row+1, min_col:max_col+1]
+print(f"\nNon-zero entries in K_reduced:\n{K_reduced_trimmed}")
+
+
+
+
