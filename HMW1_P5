@@ -1,11 +1,12 @@
 import numpy as np
 
 
-#define coefficients and angles in radians
+# define coefficients and angles in radians
 coeff = np.array([3, 2, 5])
 beta = np.deg2rad(np.array([50, 0, 280]))
 
-#function to calculate global stiffness matrix for each element
+
+# function to calculate global stiffness matrix for each element
 def calc_stiffness_matrix(coeff, beta):
     """Calculate the global stiffness matrices for structural elements.
     This function computes the stiffness matrix for each element in a structural
@@ -25,12 +26,17 @@ def calc_stiffness_matrix(coeff, beta):
     k = []
     for i in range(len(coeff)):
         c, s = np.cos(beta[i]), np.sin(beta[i])
-        k_i = coeff[i] * np.array([[c**2, c*s, -c**2, -c*s],
-                                    [c*s, s**2, -c*s, -s**2],
-                                    [-c**2, -c*s, c**2, c*s],
-                                    [-c*s, -s**2, c*s, s**2]])
+        k_i = coeff[i] * np.array(
+            [
+                [c**2, c * s, -(c**2), -c * s],
+                [c * s, s**2, -c * s, -(s**2)],
+                [-(c**2), -c * s, c**2, c * s],
+                [-c * s, -(s**2), c * s, s**2],
+            ]
+        )
         k.append(k_i)
     return k
+
 
 k_matrices = calc_stiffness_matrix(coeff, beta)
 
@@ -61,7 +67,7 @@ def global_stiffness_matrix(k_matrices):
             K_total[0:2, 0:2] += k_1
             K_total[0:2, 2:4] += k_2
             K_total[2:4, 0:2] += k_3
-            K_total[2:4, 2:4] += k_4      
+            K_total[2:4, 2:4] += k_4
         elif i == 1:
             K_total[0:2, 0:2] += k_1
             K_total[0:2, 4:6] += k_2
@@ -81,7 +87,7 @@ np.set_printoptions(precision=4, suppress=True, linewidth=100)
 print(f"Total global stiffness matrix K:\n{K_global}")
 
 
-#reduced global stiffness matrix
+# reduced global stiffness matrix
 k_boundary = np.zeros((6, 6))
 k_boundary[2:5, 2:5] = 1
 K_reduced = K_global * k_boundary
@@ -90,9 +96,5 @@ non_zero_mask = K_reduced != 0
 non_zero_indices = np.where(non_zero_mask)
 min_row, max_row = non_zero_indices[0].min(), non_zero_indices[0].max()
 min_col, max_col = non_zero_indices[1].min(), non_zero_indices[1].max()
-K_reduced_trimmed = K_reduced[min_row:max_row+1, min_col:max_col+1]
+K_reduced_trimmed = K_reduced[min_row : max_row + 1, min_col : max_col + 1]
 print(f"\nNon-zero entries in K_reduced:\n{K_reduced_trimmed}")
-
-
-
-
